@@ -5,6 +5,7 @@ import signal
 
 log = logging.getLogger("stream")
 
+
 class VLCStreamManager:
     def __init__(self, enigma2, multicast_base, port_start, caching, stop_delay):
         self.enigma2 = enigma2
@@ -46,11 +47,22 @@ class VLCStreamManager:
             url,
             "--sout", sout,
         ]
-        log.info("Starting VLC: %s", " ".join(cmd))
+        log.info("Starting VLC as user 'bridge': %s", " ".join(cmd))
+
+        # cvlc darf nicht als root laufen (VLC verweigert den Start).
+        # Die App bleibt root (Scapy/IGMP-Sniffing), cvlc wird auf den
+        # im Image angelegten User 'bridge' herabgestuft.
+        env = dict(os.environ)
+        env["HOME"] = "/data"  # beschreibbares HOME fuer den bridge-User
+
         proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.DEVNULL,
             stderr=asyncio.subprocess.DEVNULL,
+            user="bridge",
+            group="bridge",
+            env=env,
+            start_new_session=True,
         )
         from .models import Stream
         stream = Stream(
@@ -88,6 +100,9 @@ class VLCStreamManager:
         if not s or not s.pid:
             return
         try:
+            # Prozessgruppe terminieren (cvlc kann ein Wrapper-Skript sein)
+            os.killpg(s.pid, signal.SIGTERM)
+        except PermissionError:
             os.kill(s.pid, signal.SIGTERM)
         except ProcessLookupError:
             pass

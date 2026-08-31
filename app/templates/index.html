@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Enigma2 SAP Bridge</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;background:#f5f6f8;margin:0;color:#202124}
+header{background:#202124;color:#fff;padding:18px 24px}
+main{max-width:1200px;margin:24px auto;padding:0 16px}
+.card{background:#fff;border-radius:12px;padding:18px;margin-bottom:18px;box-shadow:0 1px 4px #0002}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.status{font-weight:700}.ok{color:#14833b}.bad{color:#c5221f}
+table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #eee;text-align:left}
+button,select{padding:8px 12px;border-radius:7px;border:1px solid #bbb;background:#fff}
+button{cursor:pointer}.live{color:#b00020;font-weight:700}
+.small{font-size:.9em;color:#666}
+form.inline{display:inline}
+</style>
+</head>
+<body>
+<header><strong>Enigma2 SAP Bridge</strong> — 192.168.7.38</header>
+<main>
+<div class="card">
+  <div class="grid">
+    <div>Receiver<br><span class="status {{ 'ok' if e2_ok else 'bad' }}">{{ 'ONLINE' if e2_ok else 'OFFLINE' }}</span><br><span class="small">{{ e2_msg }}</span></div>
+    <div>IGMP Monitor<br><span class="status {{ 'ok' if igmp else 'bad' }}">{{ 'AKTIV' if igmp else 'NICHT AKTIV' }}</span></div>
+    <div>Local interface<br><strong>{{ origin_ip }}</strong></div>
+    <div>SAP<br><strong>{{ settings.sap_group }}:{{ settings.sap_port }}</strong></div>
+  </div>
+</div>
+
+<div class="card">
+<h3>Bouquet</h3>
+<form method="post" action="/bouquet">
+<select name="ref">
+{% for b in bouquets %}
+<option value="{{ b.ref }}" {% if b.ref == selected %}selected{% endif %}>{{ b.name }}</option>
+{% endfor %}
+</select>
+<button>Öffnen</button>
+</form>
+<form method="post" action="/refresh" class="inline"><button>Aktualisieren</button></form>
+<a href="/playlist.m3u" target="_blank">M3U</a>
+</div>
+
+<div class="card">
+<h3>Sender ({{ channels|length }})</h3>
+<table>
+<tr><th>Sender</th><th>Multicast</th><th>Status</th><th></th></tr>
+{% for c in channels %}
+{% set s = streams.get(c.service_ref) %}
+<tr>
+<td>{{ c.name }}</td>
+<td><code>{{ c.multicast }}:{{ c.port }}</code></td>
+<td>{% if s %}<span class="live">STREAMING</span> ({{ s.clients }} VLC-Referenz{% if s.clients != 1 %}en{% endif %}, PID {{ s.pid }}){% else %}idle{% endif %}</td>
+<td>
+{% if s %}
+<form method="post" action="/stream/{{ c.service_ref|urlencode }}/stop" class="inline"><button>Stop</button></form>
+{% else %}
+<form method="post" action="/stream/{{ c.service_ref|urlencode }}/start" class="inline"><button>Start</button></form>
+{% endif %}
+</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<div class="card">
+<h3>Aktive Streams</h3>
+{% if streams %}
+<ul>
+{% for s in streams.values() %}
+<li>{{ s.channel_name }} → {{ s.multicast }}:{{ s.port }} — PID {{ s.pid }} — {{ s.clients }} Client(s)</li>
+{% endfor %}
+</ul>
+<form method="post" action="/stop-all"><button>Alle stoppen</button></form>
+{% else %}
+Keine aktiven Streams.
+{% endif %}
+</div>
+
+<div class="card small">
+<strong>VLC Mac:</strong> SAP sollte unter „Wiedergabeliste / Lokales Netzwerk / SAP“ erscheinen.
+Falls dein Netzwerk IGMP-Reports nicht bis zum LXC liefert, kannst du den Sender hier manuell mit „Start“ aktivieren.
+</div>
+</main>
+</body>
+</html>

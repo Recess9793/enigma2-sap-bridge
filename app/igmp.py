@@ -2,6 +2,10 @@ import asyncio
 import logging
 
 from scapy.all import sniff, IP
+# Scapy 2.6.x: IGMP liegt NICHT in scapy.layers.inet.
+# - IGMP (v1/v2)        -> scapy.contrib.igmp
+# - IGMPv3 / IGMPv3mr   -> scapy.contrib.igmpv3
+# (Erst ab Scapy 2.7+ existiert scapy.layers.igmp.)
 from scapy.contrib.igmp import IGMP
 from scapy.contrib.igmpv3 import IGMPv3mr
 
@@ -49,13 +53,19 @@ class IGMPMonitor:
         self.running = False
 
         if self.task:
-            self.task.cancel()
-
-            await asyncio.gather(
-                self.task,
-                return_exceptions=True,
-            )
-
+            # Der Sniff-Thread laeuft in to_thread() und laesst sich nicht
+            # per task.cancel() abbrechen; stop_filter wird erst beim
+            # naechsten Paket geprueft. Deshalb nur begrenzt warten,
+            # damit der Container-Shutdown nicht haengt.
+            try:
+                await asyncio.wait_for(
+                    asyncio.shield(self.task),
+                    timeout=2.0,
+                )
+            except (asyncio.TimeoutError, asyncio.CancelledError):
+                pass
+            except Exception:
+                pass
             self.task = None
 
     def _sniff(self):
@@ -102,7 +112,7 @@ class IGMPMonitor:
 
         group = getattr(igmp, "gaddr", None)
 
-        if group and group != "0.0.0.0":
+        if group and str(group) != "0.0.0.0":
 
             # Membership Report:
             #
@@ -150,11 +160,15 @@ class IGMPMonitor:
 
         if igmp.type == 0x22:
 
-            records = getattr(
-                igmp,
-                "records",
-                None,
-            )
+            # Scapy 2.6.x: die Group Records liegen im IGMPv3mr-Payload
+            # (IGMPv3mr = "Membership Report", gebunden an IGMPv3 type=0x22),
+            # nicht direkt auf dem IGMPv3-Layer.
+            mr = packet.getlayer(IGMPv3mr)
+            if mr is not None:
+                records = list(mr.records)
+            else:
+                # Fallback fuer andere Scapy-Layouts
+                records = list(getattr(igmp, "records", None) or [])
 
             if not records:
                 log.debug(
@@ -189,8 +203,8 @@ class IGMPMonitor:
                 # 5 ALLOW_NEW_SOURCES
                 # 6 BLOCK_OLD_SOURCES
                 #
-                # Für unsere Anwendung behandeln wir JOIN-relevante
-                # Zustände als Membership und Leave/Block als Release.
+                # Fuer unsere Anwendung behandeln wir JOIN-relevante
+                # Zustaende als Membership und Leave/Block als Release.
 
                 if record_type in (1, 2, 4, 5):
 

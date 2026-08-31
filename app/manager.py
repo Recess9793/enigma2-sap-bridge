@@ -63,7 +63,7 @@ class Manager:
         clients = self.clients.setdefault(ch.service_ref, set())
         clients.discard(f"igmp:{client}")
         if not clients:
-            await self.vlc.stop(ch.service_ref)
+            await self.vlc.release(ch.service_ref)
 
     async def start(self, ref):
         ch = self.channels.get(ref)

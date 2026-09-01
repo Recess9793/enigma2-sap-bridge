@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{{ title }}</h2>
+
+<p class="hint">
+  H.264/AAC, {{ settings.remote_width }}×{{ settings.remote_height }},
+  ca. {{ settings.remote_video_bitrate_k }} kbit/s Video.
+  Kein SAP/IGMP; geeignet für lokales WLAN und NetBird.
+  Der erste HLS-Abruf startet den Encoder. Nach
+  {{ settings.remote_idle_timeout }} Sekunden ohne Abruf wird er beendet.
+</p>
+
+{% if not settings.remote_token %}
+<p class="bad">REMOTE_TOKEN fehlt. Remote HLS ist absichtlich deaktiviert.</p>
+{% else %}
+<p>
+  <a href="/remote/playlist.m3u?token={{ settings.remote_token }}">
+    Remote-HLS-M3U herunterladen
+  </a>
+</p>
+
+<p class="hint">
+  Die M3U verwendet derzeit <code>{{ base_url }}</code>.
+  Für NetBird unterwegs sollte <code>REMOTE_PUBLIC_BASE_URL</code> in
+  <code>.env</code> auf die NetBird-IP oder einen über NetBird auflösbaren
+  DNS-Namen der Bridge gesetzt werden.
+</p>
+
+<table>
+  <tr>
+    <th>Sender</th>
+    <th>HLS</th>
+    <th>Status</th>
+  </tr>
+
+  {% for remote_id, c in remote.items() %}
+  {% set s = streams.get(c.key) %}
+  {% set hls_url = base_url ~ '/remote/' ~ remote_id ~ '/index.m3u8?token=' ~ settings.remote_token %}
+  <tr>
+    <td>{{ c.name }}</td>
+    <td>
+      <a href="{{ hls_url }}" target="_blank" rel="noopener noreferrer">
+        HLS öffnen
+      </a>
+      <button
+        type="button"
+        class="copy-hls"
+        data-url="{{ hls_url }}"
+        aria-label="HLS-Adresse für {{ c.name }} kopieren"
+      >
+        Kopieren
+      </button>
+    </td>
+    <td class="{{ 'streaming' if s else 'idle' }}">
+      {{ 'STREAMING (PID ' ~ s.pid ~ ')' if s else 'idle' }}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+
+<script>
+document.querySelectorAll('.copy-hls').forEach((button) => {
+  button.addEventListener('click', async () => {
+    const original = button.textContent;
+    try {
+      await navigator.clipboard.writeText(button.dataset.url);
+      button.textContent = 'Kopiert';
+    } catch (error) {
+      window.prompt('HLS-Adresse kopieren:', button.dataset.url);
+    }
+    window.setTimeout(() => { button.textContent = original; }, 1800);
+  });
+});
+</script>
+{% endif %}
+{% endblock %}

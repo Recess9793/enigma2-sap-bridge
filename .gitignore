@@ -1,2 +1,10 @@
 
 .env
+
+# Local configuration, runtime data and Python build artifacts
+.env
+data/
+__pycache__/
+*.py[cod]
+*.py.before-*
+fix_remote_hls_startup*.py

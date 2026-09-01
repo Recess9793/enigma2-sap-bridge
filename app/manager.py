@@ -1,86 +1,88 @@
 import asyncio
+import base64
 import ipaddress
 import logging
 from .models import Channel
 
 log = logging.getLogger("manager")
 
+
 class Manager:
-    def __init__(self, enigma2, vlc, sap, default_bouquet):
-        self.enigma2 = enigma2
-        self.vlc = vlc
-        self.sap = sap
-        self.default_bouquet = default_bouquet
-        self.bouquets = []
-        self.channels = {}
-        self.selected_bouquet = default_bouquet
-        self.clients = {}  # service_ref -> set(client-id)
+    def __init__(self, enigma2, streams, sap, settings):
+        self.enigma2, self.streams, self.sap, self.settings = enigma2, streams, sap, settings
+        self.bouquets, self.channels, self.remote_channels, self.clients = [], {}, {}, {}
+        self.selected_bouquet = settings.default_bouquet
         self.lock = asyncio.Lock()
 
+    @staticmethod
+    def _remote_id(service_ref):
+        return base64.urlsafe_b64encode(service_ref.encode()).decode().rstrip("=")
+
     async def refresh(self):
-        bouquets = await self.enigma2.bouquets()
-        self.bouquets = bouquets
-        if not bouquets:
+        self.bouquets = await self.enigma2.bouquets()
+        if not self.bouquets:
             raise RuntimeError("OpenWebif returned no TV bouquets")
-        refs = {b["ref"] for b in bouquets}
+        refs = {b["ref"] for b in self.bouquets}
         if self.selected_bouquet not in refs:
-            self.selected_bouquet = bouquets[0]["ref"]
+            self.selected_bouquet = self.bouquets[0]["ref"]
         await self.load_bouquet(self.selected_bouquet)
 
     async def load_bouquet(self, ref):
         async with self.lock:
             raw = await self.enigma2.channels(ref)
-            self.channels = {}
-            for idx, c in enumerate(raw):
-                ch = Channel(c["ref"], c["name"], ref)
-                ch.multicast = self._multicast(idx)
-                ch.port = 5000 + idx * 2
-                self.channels[ch.service_ref] = ch
-            self.selected_bouquet = ref
-            self._update_sap()
-
-    def _multicast(self, idx):
-        return str(ipaddress.ip_address(self.vlc.multicast_base) + idx)
-
-    def _update_sap(self):
-        self.sap.set_sessions(self.channels)
+            channels, remote = {}, {}
+            for idx, item in enumerate(raw):
+                source_ref, name = item["ref"], item["name"]
+                lan = Channel(f"lan:{source_ref}", source_ref, name, ref, "lan", str(ipaddress.ip_address(self.settings.multicast_base) + idx), self.settings.multicast_port_start + idx * 2)
+                channels[lan.key] = lan
+                if self.settings.wifi_enabled:
+                    wifi = Channel(f"wifi:{source_ref}", source_ref, f"{name} – WLAN 720p", ref, "wifi", str(ipaddress.ip_address(self.settings.wifi_multicast_base) + idx), self.settings.wifi_multicast_port_start + idx * 2)
+                    channels[wifi.key] = wifi
+                remote[self._remote_id(source_ref)] = Channel(f"remote:{source_ref}", source_ref, f"{name} – Remote 480p", ref, "remote")
+            self.channels, self.remote_channels, self.selected_bouquet = channels, remote, ref
+            self.sap.set_sessions(channels)
 
     async def join(self, group, client=""):
-        ch = next((c for c in self.channels.values() if c.multicast == group), None)
-        if not ch:
-            log.debug("IGMP join for unknown group %s from %s", group, client)
+        channel = next((c for c in self.channels.values() if c.multicast == group), None)
+        if not channel:
             return
-        clients = self.clients.setdefault(ch.service_ref, set())
-        was_empty = not clients
-        clients.add(f"igmp:{client}")
+        members = self.clients.setdefault(channel.key, set())
+        if f"igmp:{client}" in members:
+            return
+        was_empty = not members
+        members.add(f"igmp:{client}")
         if was_empty:
-            await self.vlc.start(ch)
+            await self.streams.start_multicast(channel)
 
     async def leave(self, group, client=""):
-        ch = next((c for c in self.channels.values() if c.multicast == group), None)
-        if not ch:
+        channel = next((c for c in self.channels.values() if c.multicast == group), None)
+        if not channel:
             return
-        clients = self.clients.setdefault(ch.service_ref, set())
-        clients.discard(f"igmp:{client}")
-        if not clients:
-            await self.vlc.release(ch.service_ref)
+        members = self.clients.setdefault(channel.key, set())
+        members.discard(f"igmp:{client}")
+        if not members:
+            await self.streams.release_multicast(channel.key)
 
-    async def start(self, ref):
-        ch = self.channels.get(ref)
-        if not ch:
-            raise KeyError(ref)
-        self.clients.setdefault(ref, set()).add("web")
-        return await self.vlc.start(ch)
+    async def start(self, key):
+        channel = self.channels.get(key)
+        if not channel:
+            raise KeyError(key)
+        self.clients.setdefault(key, set()).add("web")
+        return await self.streams.start_multicast(channel)
 
-    async def stop(self, ref):
-        self.clients.pop(ref, None)
-        await self.vlc.stop(ref)
+    async def stop(self, key):
+        self.clients.pop(key, None)
+        await self.streams.stop(key)
 
-    def channel_list(self):
-        return list(self.channels.values())
+    async def start_remote(self, remote_id):
+        channel = self.remote_channels.get(remote_id)
+        if not channel:
+            raise KeyError(remote_id)
+        return await self.streams.start_hls(channel)
 
-    def stream_list(self):
-        return list(self.vlc.streams.values())
+    def touch_remote(self, remote_id):
+        self.streams.touch(f"remote:{self.remote_channels[remote_id].service_ref}")
 
-    def client_count(self, ref):
-        return len(self.clients.get(ref, set()))
+    def channel_list(self): return list(self.channels.values())
+    def stream_list(self): return list(self.streams.streams.values())
+    def client_count(self, key): return len(self.clients.get(key, set()))

@@ -4,23 +4,8 @@ services:
     container_name: enigma2-sap-bridge
     restart: unless-stopped
     network_mode: host
-    environment:
-      ENIGMA2_HOST: "192.168.7.122"
-      ENIGMA2_PORT: "80"
-      ENIGMA2_USER: ""
-      ENIGMA2_PASSWORD: ""
-      WEB_HOST: "0.0.0.0"
-      WEB_PORT: "8090"
-      MULTICAST_BASE: "239.192.7.100"
-      MULTICAST_PORT_START: "5000"
-      SAP_GROUP: "224.2.127.254"
-      SAP_PORT: "9875"
-      SAP_INTERVAL: "10"
-      STREAM_STOP_DELAY: "5"
-      VLC_NETWORK_CACHING: "150"
-      IGMP_INTERFACE: ""
-      BOUQUET_REFRESH: "60"
-      DEFAULT_BOUQUET: "userbouquet.favourites.tv"
+    env_file:
+      - .env
     cap_add:
       - NET_RAW
     volumes:

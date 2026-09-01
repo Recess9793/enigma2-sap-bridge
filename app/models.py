@@ -2,21 +2,28 @@ from dataclasses import dataclass, field
 from typing import Optional
 import time
 
+
 @dataclass
 class Channel:
+    key: str
     service_ref: str
     name: str
     bouquet_ref: str
+    profile: str
     multicast: str = ""
     port: int = 0
 
+
 @dataclass
 class Stream:
+    key: str
     service_ref: str
     channel_name: str
-    multicast: str
-    port: int
+    profile: str
+    kind: str
+    multicast: str = ""
+    port: int = 0
     pid: Optional[int] = None
     started_at: float = field(default_factory=time.time)
+    last_access: float = field(default_factory=time.monotonic)
     clients: int = 0
-    stop_task: object = None

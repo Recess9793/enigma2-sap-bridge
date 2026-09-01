@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% block content %}
+<h2>{{ title }}</h2><p class="hint">{% if active_page == 'lan' %}Originaler MPEG-TS ohne Transcoding. Für Kabel-LAN. SAP/RTP: 239.192.7.0/24.{% else %}H.264/AAC, 1280×720, ca. {{ settings.wifi_video_bitrate_k }} kbit/s Video. SAP/RTP: 239.192.8.0/24.{% endif %}</p>
+<form class="inline" method="post" action="/refresh"><button>Sender aktualisieren</button></form> <a href="/playlist.m3u?profile={{ active_page }}">M3U herunterladen</a>
+<h3>Bouquet</h3><form method="post" action="/bouquet"><select name="ref">{% for b in bouquets %}<option value="{{ b.ref }}" {% if b.ref == selected %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select> <button>Laden</button></form>
+<h3>Sender ({{ channels|length }})</h3><table><tr><th>Sender</th><th>RTP-Gruppe</th><th>Status</th><th>Steuerung</th></tr>{% for c in channels %}{% set s = streams.get(c.key) %}<tr><td>{{ c.name }}</td><td><code>{{ c.multicast }}:{{ c.port }}</code></td><td class="{{ 'streaming' if s else 'idle' }}">{{ 'STREAMING (PID ' ~ s.pid ~ ')' if s else 'idle' }}</td><td>{% if s %}<form method="post" action="/stream/{{ c.key }}/stop"><button class="stop">Stop</button></form>{% else %}<form method="post" action="/stream/{{ c.key }}/start"><button>Start</button></form>{% endif %}</td></tr>{% endfor %}</table>
+{% endblock %}

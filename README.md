@@ -37,7 +37,8 @@ Multicast:
 2. Netzwerkinterface des LXC muss Multicast unterstützen.
 3. OpenWebif muss auf dem Enigma2-Receiver erreichbar sein.
 4. Der Receiver muss HTTP-Streaming auf Port 8001 erlauben.
-5. Switch/AP sollte Multicast/IGMP korrekt weiterleiten.
+5. Switch/AP sollte Multicast/IGMP korrekt weiterleiten. (igmp snooping auf allen Switches deaktivieren)
+6. Im Wlan kein Multicast to Unicast, sonst haben ios Geräte und Alexa Probleme mit der Verbindung
 
 ## Installation
 

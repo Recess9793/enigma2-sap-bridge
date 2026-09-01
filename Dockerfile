@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      python3 python3-pip python3-venv vlc iproute2 procps ca-certificates \
+      python3 python3-pip python3-venv vlc iproute2 procps ca-certificates libpcap0.8 \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

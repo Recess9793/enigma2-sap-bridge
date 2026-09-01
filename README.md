@@ -1,4 +1,4 @@
-# Enigma2 SAP Bridge
+# Satreceiver Multicast Stream Bridge
 
 Docker-Compose-Projekt für einen OpenATV/Enigma2-Receiver und einen Proxmox-LXC.
 

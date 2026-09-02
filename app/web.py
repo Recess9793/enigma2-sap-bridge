@@ -63,7 +63,12 @@ async def lifespan(app):
     await sap.stop()
 
 
-app = FastAPI(title="Enigma2 SAP Bridge", lifespan=lifespan)
+app = FastAPI(title="Satreceiver Multicast Stream Bridge", lifespan=lifespan)
+
+
+@app.get("/favicon.svg", include_in_schema=False)
+async def favicon():
+    return FileResponse("/app/app/static/favicon.svg", media_type="image/svg+xml")
 
 
 def remote_allowed(token):

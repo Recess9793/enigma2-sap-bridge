@@ -1,7 +1,69 @@
 <!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ title }} – Satreceiver Multicast Stream Bridge</title><style>
-:root{color-scheme:dark}body{font-family:system-ui,-apple-system,sans-serif;max-width:1400px;margin:0 auto;padding:1.2rem;background:#111827;color:#e5e7eb}a{color:#7dd3fc}nav{display:flex;gap:.45rem;flex-wrap:wrap;margin:1rem 0 1.25rem}nav a{padding:.55rem .8rem;text-decoration:none;background:#263144;border-radius:.4rem}nav a.active{background:#0e7490;color:white}table{border-collapse:collapse;width:100%;background:#182235}td,th{padding:.55rem;border-bottom:1px solid #344157;text-align:left;vertical-align:top}th{background:#243149}code{font-size:.82rem;overflow-wrap:anywhere}.ok{color:#86efac}.bad{color:#fca5a5}.idle{color:#cbd5e1}.streaming{color:#facc15;font-weight:600}button{padding:.35rem .65rem;border:0;border-radius:.3rem;background:#0e7490;color:white;cursor:pointer}button.stop{background:#b91c1c}.status{background:#182235;padding:.75rem;border-radius:.45rem}.hint{color:#b8c4d8;font-size:.92rem}.url{display:block;padding:.5rem;background:#0b1220;border-radius:.3rem;margin:.4rem 0}form.inline{display:inline}@media(max-width:700px){body{padding:.65rem}table{font-size:.85rem}th:nth-child(2),td:nth-child(2){display:none}}</style></head><body>
-<h1>Satreceiver Multicast Stream Bridge</h1><div class="status">Receiver: <b class="{{ 'ok' if e2_ok else 'bad' }}">{{ 'ONLINE' if e2_ok else 'OFFLINE' }}</b> — {{ e2_msg }}</div>
-<nav><a class="{{ 'active' if active_page == 'lan' else '' }}" href="/">Native LAN</a><a class="{{ 'active' if active_page == 'wifi' else '' }}" href="/wifi">WLAN 720p</a><a class="{{ 'active' if active_page == 'remote' else '' }}" href="/remote">Remote HLS 480p</a></nav>
-{% block content %}{% endblock %}
-</body></html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ title }} – Satreceiver Multicast Stream Bridge</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="alternate icon" href="/favicon.svg" type="image/svg+xml">
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1.2rem;
+      background: #111827;
+      color: #e5e7eb;
+    }
+    a { color: #7dd3fc; }
+    nav { display: flex; gap: .45rem; flex-wrap: wrap; margin: 1rem 0 1.25rem; }
+    nav a { padding: .55rem .8rem; text-decoration: none; background: #263144; border-radius: .4rem; }
+    nav a.active { background: #0e7490; color: white; }
+    table { border-collapse: collapse; width: 100%; background: #182235; }
+    td, th { padding: .55rem; border-bottom: 1px solid #344157; text-align: left; vertical-align: top; }
+    th { background: #243149; }
+    code { font-size: .82rem; overflow-wrap: anywhere; }
+    .ok { color: #86efac; }
+    .bad { color: #fca5a5; }
+    .idle { color: #cbd5e1; }
+    .streaming { color: #facc15; font-weight: 600; }
+    button { padding: .35rem .65rem; border: 0; border-radius: .3rem; background: #0e7490; color: white; cursor: pointer; }
+    button.stop { background: #b91c1c; }
+    .status { background: #182235; padding: .75rem; border-radius: .45rem; }
+    .hint { color: #b8c4d8; font-size: .92rem; }
+    .url { display: block; padding: .5rem; background: #0b1220; border-radius: .3rem; margin: .4rem 0; }
+    form.inline { display: inline; }
+    @media (max-width: 700px) {
+      body { padding: .65rem; }
+      table { font-size: .85rem; }
+      th:nth-child(2), td:nth-child(2) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Satreceiver Multicast Stream Bridge</h1>
+
+  <div class="status">
+    Receiver:
+    <b class="{{ 'ok' if e2_ok else 'bad' }}">
+      {{ 'ONLINE' if e2_ok else 'OFFLINE' }}
+    </b>
+    —
+    <a href="http://{{ settings.enigma2_host }}:{{ settings.enigma2_port }}/"
+       target="_blank"
+       rel="noopener noreferrer">
+      OpenWebif
+    </a>
+    <span class="hint">({{ e2_msg }})</span>
+  </div>
+
+  <nav>
+    <a class="{{ 'active' if active_page == 'lan' else '' }}" href="/">Native LAN</a>
+    <a class="{{ 'active' if active_page == 'wifi' else '' }}" href="/wifi">WLAN 720p</a>
+    <a class="{{ 'active' if active_page == 'remote' else '' }}" href="/remote">Remote HLS 480p</a>
+  </nav>
+
+  {% block content %}{% endblock %}
+</body>
+</html>

@@ -45,7 +45,7 @@ Multicast:
 ```bash
 mkdir -p /opt/enigma2-sap-bridge
 cd /opt/enigma2-sap-bridge
-# Projektdateien hierher kopieren
+# Projektdateien hierher kopieren: git clone https://github.com/Recess9793/enigma2-sap-bridge.git
 cp .env.example .env
 nano .env
 docker compose build

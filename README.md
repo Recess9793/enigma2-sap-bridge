@@ -17,10 +17,10 @@ Docker-Compose-Projekt für einen OpenATV/Enigma2-Receiver und einen Proxmox-LXC
 ## Architektur
 
 Receiver:
-  192.168.7.122
+  192.168.7.122 (Beispiel)
 
 LXC:
-  192.168.7.38
+  192.168.7.38 (Beispiel)
 
 Webinterface:
   http://192.168.7.38:8090
@@ -37,7 +37,7 @@ Multicast:
 2. Netzwerkinterface des LXC muss Multicast unterstützen.
 3. OpenWebif muss auf dem Enigma2-Receiver erreichbar sein.
 4. Der Receiver muss HTTP-Streaming auf Port 8001 erlauben.
-5. Switch/AP sollte Multicast/IGMP korrekt weiterleiten. (igmp snooping auf allen Switches deaktivieren)
+5. Switch/AP sollte Multicast/IGMP korrekt weiterleiten. (igmp snooping auf allen Switches deaktivieren bzw. mrouter Richtung lxc einrichten)
 6. Im Wlan kein Multicast to Unicast, sonst haben ios Geräte und Alexa Probleme mit der Verbindung
 
 ## Installation

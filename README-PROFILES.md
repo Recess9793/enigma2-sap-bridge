@@ -15,4 +15,4 @@ Diese Dateien ergänzen das vorhandene Projekt um LAN-, WLAN- und Remote-HLS-Pro
 * WLAN: SAP-Eintrag mit `– WLAN 720p`; H.264/AAC in `239.192.8.0/24`.
 * Remote: Im Webinterface die Remote-ID kopieren und die HLS-URL mit NetBird-IP und Token in VLC öffnen.
 
-Remote-HLS ist absichtlich nicht als SAP-Stream verfügbar. Der Zugriff ist für NetBird vorgesehen; der Token verhindert zusätzlich unabsichtliche Abrufe. Der Token ist kein Ersatz für NetBird-ACLs oder TLS.
+Remote-HLS ist absichtlich nicht als SAP-Stream verfügbar. Der Zugriff ist für NetBird (oder ähnliches VPN Netzwerk, wie Tailscale,...) vorgesehen; der Token verhindert zusätzlich unabsichtliche Abrufe. Der Token ist kein Ersatz für NetBird-ACLs oder TLS.
